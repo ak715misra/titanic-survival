@@ -13,7 +13,7 @@
 # Run the code cell below to load our data and display the first few entries (passengers) for examination using the `.head()` function.
 # > **Tip:** You can run a code cell by clicking on the cell and using the keyboard shortcut **Shift + Enter** or **Shift + Return**. Alternatively, a code cell can be executed using the **Play** button in the hotbar after selecting it. Markdown cells (text cells like this one) can be edited by double-clicking, and saved using these same shortcuts. [Markdown](http://daringfireball.net/projects/markdown/syntax) allows you to write easy-to-read plain text that can be converted to HTML.
 
-# In[1]:
+# In[4]:
 
 
 # Import libraries necessary for this project
@@ -32,7 +32,7 @@ in_file = 'titanic_data.csv'
 full_data = pd.read_csv(in_file)
 
 # Print the first few entries of the RMS Titanic data
-display(full_data.head())
+display(full_data.head(10))
 
 
 # From a sample of the RMS Titanic data, we can see the various features present for each passenger on the ship:
@@ -51,7 +51,7 @@ display(full_data.head())
 # Since we're interested in the outcome of survival for each passenger or crew member, we can remove the **Survived** feature from this dataset and store it as its own separate variable `outcomes`. We will use these outcomes as our prediction targets.  
 # Run the code cell below to remove **Survived** as a feature of the dataset and store it in `outcomes`.
 
-# In[2]:
+# In[5]:
 
 
 # Store the 'Survived' feature in a new variable and remove it from the dataset
@@ -59,7 +59,7 @@ outcomes = full_data['Survived']
 data = full_data.drop('Survived', axis = 1)
 
 # Show the new dataset with 'Survived' removed
-display(data.head())
+display(data.head(10))
 
 
 # The very same sample of the RMS Titanic data now shows the **Survived** feature removed from the DataFrame. Note that `data` (the passenger data) and `outcomes` (the outcomes of survival) are now *paired*. That means for any passenger `data.loc[i]`, they have the survival outcome `outcomes[i]`.
@@ -68,7 +68,7 @@ display(data.head())
 # 
 # **Think:** *Out of the first five passengers, if we predict that all of them survived, what would you expect the accuracy of our predictions to be?*
 
-# In[3]:
+# In[6]:
 
 
 def accuracy_score(truth, pred):
@@ -95,7 +95,7 @@ print(accuracy_score(outcomes[:5], predictions))
 # If we were asked to make a prediction about any passenger aboard the RMS Titanic whom we knew nothing about, then the best prediction we could make would be that they did not survive. This is because we can assume that a majority of the passengers (more than 50%) did not survive the ship sinking.  
 # The `predictions_0` function below will always predict that a passenger did not survive.
 
-# In[4]:
+# In[9]:
 
 
 def predictions_0(data):
@@ -103,7 +103,7 @@ def predictions_0(data):
 
     predictions = []
     for passenger_id, passenger in data.iterrows():
-        passenger_id = passenger['PassengerId']
+        #passenger_id = passenger['PassengerId']
         # Predict the survival of 'passenger'
         predictions.append(0)
     
@@ -120,19 +120,19 @@ predictions = predictions_0(data)
 # 
 # **Hint:** Run the code cell below to see the accuracy of this prediction.
 
-# In[5]:
+# In[10]:
 
 
 print(accuracy_score(outcomes, predictions))
 
 
-# **Answer:** *Replace this text with the prediction accuracy you found above.*
+# **Answer:** 61.62%
 
 # ***
 # Let's take a look at whether the feature **Sex** has any indication of survival rates among passengers using the `survival_stats` function. This function is defined in the `visuals.py` Python script included with this project. The first two parameters passed to the function are the RMS Titanic data and passenger survival outcomes, respectively. The third parameter indicates which feature we want to plot survival statistics across.  
 # Run the code cell below to plot the survival outcomes of passengers based on their sex.
 
-# In[7]:
+# In[11]:
 
 
 vs.survival_stats(data, outcomes, 'Sex')
@@ -142,7 +142,7 @@ vs.survival_stats(data, outcomes, 'Sex')
 # Fill in the missing code below so that the function will make this prediction.  
 # **Hint:** You can access the values of each feature for a passenger like a dictionary. For example, `passenger['Sex']` is the sex of the passenger.
 
-# In[6]:
+# In[14]:
 
 
 def predictions_1(data):
@@ -151,7 +151,7 @@ def predictions_1(data):
     
     predictions = []
     for passenger_id, passenger in data.iterrows():
-        passenger_id = passenger['PassengerId']
+        # passenger_id = passenger['PassengerId']
         # Remove the 'pass' statement below 
         # and write your prediction conditions here
         if passenger['Sex'] == 'female':
@@ -172,19 +172,19 @@ predictions = predictions_1(data)
 # 
 # **Hint:** Run the code cell below to see the accuracy of this prediction.
 
-# In[7]:
+# In[15]:
 
 
 print(accuracy_score(outcomes, predictions))
 
 
-# **Answer**: *Replace this text with the prediction accuracy you found above.*
+# **Answer**: 78.68%
 
 # ***
 # Using just the **Sex** feature for each passenger, we are able to increase the accuracy of our predictions by a significant margin. Now, let's consider using an additional feature to see if we can further improve our predictions. For example, consider all of the male passengers aboard the RMS Titanic: Can we find a subset of those passengers that had a higher rate of survival? Let's start by looking at the **Age** of each male, by again using the `survival_stats` function. This time, we'll use a fourth parameter to filter out the data so that only passengers with the **Sex** 'male' will be included.  
 # Run the code cell below to plot the survival outcomes of male passengers based on their age.
 
-# In[10]:
+# In[18]:
 
 
 vs.survival_stats(data, outcomes, 'Age', ["Sex == 'male'"])
@@ -194,7 +194,7 @@ vs.survival_stats(data, outcomes, 'Age', ["Sex == 'male'"])
 # Fill in the missing code below so that the function will make this prediction.  
 # **Hint:** You can start your implementation of this function using the prediction code you wrote earlier from `predictions_1`.
 
-# In[8]:
+# In[19]:
 
 
 def predictions_2(data):
@@ -204,7 +204,7 @@ def predictions_2(data):
     
     predictions = []
     for passenger_id, passenger in data.iterrows():
-        passenger_id = passenger['PassengerId']
+        # passenger_id = passenger['PassengerId']
         # Remove the 'pass' statement below 
         # and write your prediction conditions here
         if passenger['Sex'] == 'female':
@@ -227,13 +227,13 @@ predictions = predictions_2(data)
 # 
 # **Hint:** Run the code cell below to see the accuracy of this prediction.
 
-# In[9]:
+# In[20]:
 
 
 print(accuracy_score(outcomes, predictions))
 
 
-# **Answer**: *Replace this text with the prediction accuracy you found above.*
+# **Answer**: 79.35%
 
 # ***
 # Adding the feature **Age** as a condition in conjunction with **Sex** improves the accuracy by a small margin more than with simply using the feature **Sex** alone. Now it's your turn: Find a series of features and conditions to split the data on to obtain an outcome prediction accuracy of at least 80%. This may require multiple features and multiple levels of conditional statements to succeed. You can use the same feature multiple times with different conditions.   
@@ -242,7 +242,7 @@ print(accuracy_score(outcomes, predictions))
 # Use the `survival_stats` function below to to examine various survival statistics.  
 # **Hint:** To use mulitple filter conditions, put each condition in the list passed as the last argument. Example: `["Sex == 'male'", "Age < 18"]`
 
-# In[13]:
+# In[31]:
 
 
 vs.survival_stats(data, outcomes, 'Pclass')
@@ -252,7 +252,7 @@ vs.survival_stats(data, outcomes, 'Pclass')
 # Make sure to keep track of the various features and conditions you tried before arriving at your final prediction model.  
 # **Hint:** You can start your implementation of this function using the prediction code you wrote earlier from `predictions_2`.
 
-# In[17]:
+# In[34]:
 
 
 def predictions_3(data):
@@ -260,7 +260,7 @@ def predictions_3(data):
     
     predictions = []
     for passenger_id, passenger in data.iterrows():
-        passenger_id = passenger['PassengerId']
+        # passenger_id = passenger['PassengerId']
         if (passenger['Sex'] == 'female' and passenger['Parch'] <= 3 and passenger['SibSp'] <= 2 ) or (passenger['Age'] < 13 and passenger['SibSp'] <= 2 ):
             predictions.append(1)
         else:
@@ -278,13 +278,13 @@ predictions = predictions_3(data)
 # 
 # **Hint:** Run the code cell below to see the accuracy of your predictions.
 
-# In[18]:
+# In[35]:
 
 
 print(accuracy_score(outcomes, predictions))
 
 
-# **Answer**: *Replace this text with your answer to the question above.*
+# **Answer**: Used the Trial and Error method to find the feature which affected the predictions more than others. Looked at Pclass, Age, Parch, and SibSp. Passengers with siblings snd spouses < 2 had better survival rate. Accuracy of our prediction is 82.38%
 
 # # Conclusion
 # 
