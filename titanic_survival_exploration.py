@@ -1,19 +1,14 @@
 
 # coding: utf-8
 
-# # Machine Learning Engineer Nanodegree
-# ## Introduction and Foundations
-# ## Project: Titanic Survival Exploration
+# # Lab: Titanic Survival Exploration with Decision Trees
+
+# ## Getting Started
+# In the introductory project, you studied the Titanic survival data, and you were able to make predictions about passenger survival. In that project, you built a decision tree by hand, that at each stage, picked the features that were most correlated with survival. Lucky for us, this is exactly how decision trees work! In this lab, we'll do this much quicker by implementing a decision tree in sklearn.
 # 
-# In 1912, the ship RMS Titanic struck an iceberg on its maiden voyage and sank, resulting in the deaths of most of its passengers and crew. In this introductory project, we will explore a subset of the RMS Titanic passenger manifest to determine which features best predict whether someone survived or did not survive. To complete this project, you will need to implement several conditional predictions and answer the questions below. Your project submission will be evaluated based on the completion of the code and your responses to the questions.
-# > **Tip:** Quoted sections like this will provide helpful instructions on how to navigate and use an iPython notebook. 
+# We'll start by loading the dataset and displaying some of its rows.
 
-# # Getting Started
-# To begin working with the RMS Titanic passenger data, we'll first need to `import` the functionality we need, and load our data into a `pandas` DataFrame.  
-# Run the code cell below to load our data and display the first few entries (passengers) for examination using the `.head()` function.
-# > **Tip:** You can run a code cell by clicking on the cell and using the keyboard shortcut **Shift + Enter** or **Shift + Return**. Alternatively, a code cell can be executed using the **Play** button in the hotbar after selecting it. Markdown cells (text cells like this one) can be edited by double-clicking, and saved using these same shortcuts. [Markdown](http://daringfireball.net/projects/markdown/syntax) allows you to write easy-to-read plain text that can be converted to HTML.
-
-# In[4]:
+# In[1]:
 
 
 # Import libraries necessary for this project
@@ -21,21 +16,22 @@ import numpy as np
 import pandas as pd
 from IPython.display import display # Allows the use of display() for DataFrames
 
-# Import supplementary visualizations code visuals.py
-import visuals as vs
-
 # Pretty display for notebooks
 get_ipython().run_line_magic('matplotlib', 'inline')
+
+# Set a random seed
+import random
+random.seed(42)
 
 # Load the dataset
 in_file = 'titanic_data.csv'
 full_data = pd.read_csv(in_file)
 
 # Print the first few entries of the RMS Titanic data
-display(full_data.head(10))
+display(full_data.head())
 
 
-# From a sample of the RMS Titanic data, we can see the various features present for each passenger on the ship:
+# Recall that these are the various features present for each passenger on the ship:
 # - **Survived**: Outcome of survival (0 = No; 1 = Yes)
 # - **Pclass**: Socio-economic class (1 = Upper class; 2 = Middle class; 3 = Lower class)
 # - **Name**: Name of passenger
@@ -51,243 +47,137 @@ display(full_data.head(10))
 # Since we're interested in the outcome of survival for each passenger or crew member, we can remove the **Survived** feature from this dataset and store it as its own separate variable `outcomes`. We will use these outcomes as our prediction targets.  
 # Run the code cell below to remove **Survived** as a feature of the dataset and store it in `outcomes`.
 
-# In[5]:
+# In[2]:
 
 
 # Store the 'Survived' feature in a new variable and remove it from the dataset
 outcomes = full_data['Survived']
-data = full_data.drop('Survived', axis = 1)
+features_raw = full_data.drop('Survived', axis = 1)
 
 # Show the new dataset with 'Survived' removed
-display(data.head(10))
+display(features_raw.head())
 
 
 # The very same sample of the RMS Titanic data now shows the **Survived** feature removed from the DataFrame. Note that `data` (the passenger data) and `outcomes` (the outcomes of survival) are now *paired*. That means for any passenger `data.loc[i]`, they have the survival outcome `outcomes[i]`.
 # 
-# To measure the performance of our predictions, we need a metric to score our predictions against the true outcomes of survival. Since we are interested in how *accurate* our predictions are, we will calculate the proportion of passengers where our prediction of their survival is correct. Run the code cell below to create our `accuracy_score` function and test a prediction on the first five passengers.  
+# ## Preprocessing the data
 # 
-# **Think:** *Out of the first five passengers, if we predict that all of them survived, what would you expect the accuracy of our predictions to be?*
+# Now, let's do some data preprocessing. First, we'll one-hot encode the features.
 
-# In[6]:
-
-
-def accuracy_score(truth, pred):
-    """ Returns accuracy score for input truth and predictions. """
-    
-    # Ensure that the number of predictions matches number of outcomes
-    if len(truth) == len(pred): 
-        
-        # Calculate and return the accuracy as a percent
-        return "Predictions have an accuracy of {:.2f}%.".format((truth == pred).mean()*100)
-    
-    else:
-        return "Number of predictions does not match number of outcomes!"
-    
-# Test the 'accuracy_score' function
-predictions = pd.Series(np.ones(5, dtype = int))
-print(accuracy_score(outcomes[:5], predictions))
+# In[3]:
 
 
-# > **Tip:** If you save an iPython Notebook, the output from running code blocks will also be saved. However, the state of your workspace will be reset once a new session is started. Make sure that you run all of the code blocks from your previous session to reestablish variables and functions before picking up where you last left off.
+features = pd.get_dummies(features_raw)
+
+
+# And now we'll fill in any blanks with zeroes.
+
+# In[4]:
+
+
+features = features.fillna(0.0)
+display(features.head())
+
+
+# ## (TODO) Training the model
 # 
-# # Making Predictions
-# 
-# If we were asked to make a prediction about any passenger aboard the RMS Titanic whom we knew nothing about, then the best prediction we could make would be that they did not survive. This is because we can assume that a majority of the passengers (more than 50%) did not survive the ship sinking.  
-# The `predictions_0` function below will always predict that a passenger did not survive.
+# Now we're ready to train a model in sklearn. First, let's split the data into training and testing sets. Then we'll train the model on the training set.
 
-# In[9]:
+# In[5]:
 
 
-def predictions_0(data):
-    """ Model with no features. Always predicts a passenger did not survive. """
-
-    predictions = []
-    for passenger_id, passenger in data.iterrows():
-        #passenger_id = passenger['PassengerId']
-        # Predict the survival of 'passenger'
-        predictions.append(0)
-    
-    # Return our predictions
-    return pd.Series(predictions)
-
-# Make the predictions
-predictions = predictions_0(data)
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(features, outcomes, test_size=0.2, random_state=42)
 
 
-# ### Question 1
-# 
-# * Using the RMS Titanic data, how accurate would a prediction be that none of the passengers survived?
-# 
-# **Hint:** Run the code cell below to see the accuracy of this prediction.
-
-# In[10]:
+# In[17]:
 
 
-print(accuracy_score(outcomes, predictions))
+# Import the classifier from sklearn
+from sklearn.tree import DecisionTreeClassifier
+
+# TODO: Define the classifier, and fit it to the data
+model = DecisionTreeClassifier(criterion = 'entropy', random_state=42)
+model.fit(X_train, y_train)
 
 
-# **Answer:** 61.62%
-
-# ***
-# Let's take a look at whether the feature **Sex** has any indication of survival rates among passengers using the `survival_stats` function. This function is defined in the `visuals.py` Python script included with this project. The first two parameters passed to the function are the RMS Titanic data and passenger survival outcomes, respectively. The third parameter indicates which feature we want to plot survival statistics across.  
-# Run the code cell below to plot the survival outcomes of passengers based on their sex.
-
-# In[11]:
-
-
-vs.survival_stats(data, outcomes, 'Sex')
-
-
-# Examining the survival statistics, a large majority of males did not survive the ship sinking. However, a majority of females *did* survive the ship sinking. Let's build on our previous prediction: If a passenger was female, then we will predict that they survived. Otherwise, we will predict the passenger did not survive.  
-# Fill in the missing code below so that the function will make this prediction.  
-# **Hint:** You can access the values of each feature for a passenger like a dictionary. For example, `passenger['Sex']` is the sex of the passenger.
-
-# In[14]:
-
-
-def predictions_1(data):
-    """ Model with one feature: 
-            - Predict a passenger survived if they are female. """
-    
-    predictions = []
-    for passenger_id, passenger in data.iterrows():
-        # passenger_id = passenger['PassengerId']
-        # Remove the 'pass' statement below 
-        # and write your prediction conditions here
-        if passenger['Sex'] == 'female':
-            predictions.append(1)
-        else:
-            predictions.append(0)
-            
-    # Return our predictions
-    return pd.Series(predictions)
-
-# Make the predictions
-predictions = predictions_1(data)
-
-
-# ### Question 2
-# 
-# * How accurate would a prediction be that all female passengers survived and the remaining passengers did not survive?
-# 
-# **Hint:** Run the code cell below to see the accuracy of this prediction.
-
-# In[15]:
-
-
-print(accuracy_score(outcomes, predictions))
-
-
-# **Answer**: 78.68%
-
-# ***
-# Using just the **Sex** feature for each passenger, we are able to increase the accuracy of our predictions by a significant margin. Now, let's consider using an additional feature to see if we can further improve our predictions. For example, consider all of the male passengers aboard the RMS Titanic: Can we find a subset of those passengers that had a higher rate of survival? Let's start by looking at the **Age** of each male, by again using the `survival_stats` function. This time, we'll use a fourth parameter to filter out the data so that only passengers with the **Sex** 'male' will be included.  
-# Run the code cell below to plot the survival outcomes of male passengers based on their age.
+# ## Testing the model
+# Now, let's see how our model does, let's calculate the accuracy over both the training and the testing set.
 
 # In[18]:
 
 
-vs.survival_stats(data, outcomes, 'Age', ["Sex == 'male'"])
+# Making predictions
+train_pred = model.predict(X_train)
+test_pred = model.predict(X_test)
+
+# Calculate the accuracy
+from sklearn.metrics import make_scorer, accuracy_score
+train_accuracy = accuracy_score(y_train, train_pred)
+test_accuracy = accuracy_score(y_test, test_pred)
+print('The training accuracy is', train_accuracy)
+print('The testing accuracy is', test_accuracy)
 
 
-# Examining the survival statistics, the majority of males younger than 10 survived the ship sinking, whereas most males age 10 or older *did not survive* the ship sinking. Let's continue to build on our previous prediction: If a passenger was female, then we will predict they survive. If a passenger was male and younger than 10, then we will also predict they survive. Otherwise, we will predict they do not survive.  
-# Fill in the missing code below so that the function will make this prediction.  
-# **Hint:** You can start your implementation of this function using the prediction code you wrote earlier from `predictions_1`.
+# # Exercise: Improving the model
+# 
+# Ok, high training accuracy and a lower testing accuracy. We may be overfitting a bit.
+# 
+# So now it's your turn to shine! Train a new model, and try to specify some parameters in order to improve the testing accuracy, such as:
+# - `max_depth`
+# - `min_samples_leaf`
+# - `min_samples_split`
+# 
+# You can use your intuition, trial and error, or even better, feel free to use Grid Search!
+# 
+# **Challenge:** Try to get to 85% accuracy on the testing set. If you'd like a hint, take a look at the solutions notebook next.
 
 # In[19]:
 
 
-def predictions_2(data):
-    """ Model with two features: 
-            - Predict a passenger survived if they are female.
-            - Predict a passenger survived if they are male and younger than 10. """
-    
-    predictions = []
-    for passenger_id, passenger in data.iterrows():
-        # passenger_id = passenger['PassengerId']
-        # Remove the 'pass' statement below 
-        # and write your prediction conditions here
-        if passenger['Sex'] == 'female':
-            predictions.append(1)
-        elif passenger['Age'] < 10:
-            predictions.append(1)
-        else:
-            predictions.append(0)
-            
-    # Return our predictions
-    return pd.Series(predictions)
+# TODO: Train the model
+model = DecisionTreeClassifier(criterion = 'gini', 
+                               random_state=42,
+                              max_depth = 6,
+                              min_samples_leaf = 6,
+                              min_samples_split = 10)
+model.fit(X_train, y_train)
 
-# Make the predictions
-predictions = predictions_2(data)
+# TODO: Make predictions
+y_train_pred = model.predict(X_train)
+y_test_pred = model.predict(X_test)
 
+# TODO: Calculate the accuracy
+train_accuracy = accuracy_score(y_train, y_train_pred)
+test_accuracy = accuracy_score(y_test, y_test_pred)
+print('The training accuracy is', train_accuracy)
+print('The testing accuracy is', test_accuracy)
 
-# ### Question 3
-# 
-# * How accurate would a prediction be that all female passengers and all male passengers younger than 10 survived? 
-# 
-# **Hint:** Run the code cell below to see the accuracy of this prediction.
 
 # In[20]:
 
 
-print(accuracy_score(outcomes, predictions))
+# Using GridSearch to find the optimal model and parameters
+model = DecisionTreeClassifier(random_state=42)
+
+from sklearn.model_selection import GridSearchCV
+parameters = [{'max_depth': [2,4,6,8,10]},
+              {'min_samples_leaf': [2,4,6,8,10]},
+              {'min_samples_split': [2,4,6,8,10]}]
+grid_obj = GridSearchCV(estimator = model,
+                           param_grid = parameters,
+                           scoring = make_scorer(accuracy_score))
+grid_fit = grid_obj.fit(X_train, y_train)
+best_clf = grid_fit.best_estimator_
+best_clf.fit(X_train, y_train)
+best_train_predictions = best_clf.predict(X_train)
+best_test_predictions = best_clf.predict(X_test)
+print('The training accuracy is', accuracy_score(y_train, best_train_predictions))
+print('The testing accuracy is', accuracy_score(y_test, best_test_predictions))
 
 
-# **Answer**: 79.35%
-
-# ***
-# Adding the feature **Age** as a condition in conjunction with **Sex** improves the accuracy by a small margin more than with simply using the feature **Sex** alone. Now it's your turn: Find a series of features and conditions to split the data on to obtain an outcome prediction accuracy of at least 80%. This may require multiple features and multiple levels of conditional statements to succeed. You can use the same feature multiple times with different conditions.   
-# **Pclass**, **Sex**, **Age**, **SibSp**, and **Parch** are some suggested features to try.
-# 
-# Use the `survival_stats` function below to to examine various survival statistics.  
-# **Hint:** To use mulitple filter conditions, put each condition in the list passed as the last argument. Example: `["Sex == 'male'", "Age < 18"]`
-
-# In[31]:
+# In[21]:
 
 
-vs.survival_stats(data, outcomes, 'Pclass')
+best_clf
 
-
-# After exploring the survival statistics visualization, fill in the missing code below so that the function will make your prediction.  
-# Make sure to keep track of the various features and conditions you tried before arriving at your final prediction model.  
-# **Hint:** You can start your implementation of this function using the prediction code you wrote earlier from `predictions_2`.
-
-# In[34]:
-
-
-def predictions_3(data):
-    """ Model with multiple features. Makes a prediction with an accuracy of at least 80%. """
-    
-    predictions = []
-    for passenger_id, passenger in data.iterrows():
-        # passenger_id = passenger['PassengerId']
-        if (passenger['Sex'] == 'female' and passenger['Parch'] <= 3 and passenger['SibSp'] <= 2 ) or (passenger['Age'] < 13 and passenger['SibSp'] <= 2 ):
-            predictions.append(1)
-        else:
-            predictions.append(0)    
-    # Return our predictions
-    return pd.Series(predictions)
-
-# Make the predictions
-predictions = predictions_3(data)
-
-
-# ### Question 4
-# 
-# * Describe the steps you took to implement the final prediction model so that it got **an accuracy of at least 80%**. What features did you look at? Were certain features more informative than others? Which conditions did you use to split the survival outcomes in the data? How accurate are your predictions?
-# 
-# **Hint:** Run the code cell below to see the accuracy of your predictions.
-
-# In[35]:
-
-
-print(accuracy_score(outcomes, predictions))
-
-
-# **Answer**: Used the Trial and Error method to find the feature which affected the predictions more than others. Looked at Pclass, Age, Parch, and SibSp. Passengers with siblings snd spouses < 2 had better survival rate. Accuracy of our prediction is 82.38%
-
-# # Conclusion
-# 
-# After several iterations of exploring and conditioning on the data, you have built a useful algorithm for predicting the survival of each passenger aboard the RMS Titanic. The technique applied in this project is a manual implementation of a simple machine learning model, the *decision tree*. A decision tree splits a set of data into smaller and smaller groups (called *nodes*), by one feature at a time. Each time a subset of the data is split, our predictions become more accurate if each of the resulting subgroups are more homogeneous (contain similar labels) than before. The advantage of having a computer do things for us is that it will be more exhaustive and more precise than our manual exploration above. [This link](http://www.r2d3.us/visual-intro-to-machine-learning-part-1/) provides another introduction into machine learning using a decision tree.
-# 
-# A decision tree is just one of many models that come from *supervised learning*. In supervised learning, we attempt to use features of the data to predict or model things with objective outcome labels. That is to say, each of our data points has a known outcome value, such as a categorical, discrete label like `'Survived'`, or a numerical, continuous value like predicting the price of a house.
